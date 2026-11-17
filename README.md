@@ -52,7 +52,16 @@ whatsapp/?phone=0501234567&text=שלום
   attachments?: [{ filename: 'קבלה-12.pdf', mimeType: 'application/pdf', data: Uint8Array | base64 }] }
 ```
 
-### הגדרה חד-פעמית לשליחה אוטומטית (Gmail API)
+### ✅ ההגדרה כבר בוצעה (17.11.2026)
+- הפרויקט ב-Google Cloud: **Pinkas** (חשבון sallaryandpension@gmail.com).
+- הגדרות: Gmail API מופעל; הרשאה `gmail.send` בלבד; מצב Testing; משתמש בדיקה יחיד: sallaryandpension@gmail.com.
+- ה-Client ID נמצא ב-`kit.config.js` (הוא ציבורי, לא סוד):
+  ```js
+  import { GMAIL_CLIENT_ID } from './kit/kit.config.js';
+  const sender = new GmailSender({ clientId: GMAIL_CLIENT_ID });
+  ```
+
+### הגדרה חד-פעמית לשליחה אוטומטית (Gmail API), לפרויקט חדש
 אפשר לדלג על השלב הזה: "טיוטה ב-Gmail" עובדת בלעדיו.
 1. נכנסים ל-https://console.cloud.google.com עם חשבון ה-Gmail שממנו שולחים, ויוצרים פרויקט חדש (חינם).
 2. **APIs & Services ← Library** ← מחפשים **Gmail API** ← **Enable**.

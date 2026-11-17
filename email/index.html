@@ -36,6 +36,7 @@
 </main>
 <script type="module">
   import { openGmailDraft, mailtoUrl, GmailSender, bytesToBase64 } from './email.js';
+  import { GMAIL_CLIENT_ID } from '../kit.config.js';
   const $ = (id) => document.getElementById(id);
   const out = (cls, text) => { $('out').innerHTML = ''; const d = document.createElement('div'); d.className = `msg ${cls}`; d.textContent = text; $('out').appendChild(d); };
   const msg = () => ({ to: $('to').value, cc: $('cc').value, subject: $('subject').value, text: $('text').value });
@@ -45,7 +46,7 @@
   for (const k of ['to', 'cc', 'subject', 'text']) if (qp.has(k)) $(k).value = qp.get(k);
 
   // ה-Client ID נשמר בדפדפן הזה לנוחות (אינו סוד)
-  try { $('clientId').value = localStorage.getItem('kit.gmail.clientId') ?? ''; } catch {}
+  try { $('clientId').value = localStorage.getItem('kit.gmail.clientId') || GMAIL_CLIENT_ID; } catch { $('clientId').value = GMAIL_CLIENT_ID; }
   let sender = null;
 
   $('draft').onclick = () => { try { openGmailDraft(msg()); out('ok', 'נפתחה טיוטה ב-Gmail – בדוק ולחץ "שלח".'); } catch (e) { out('err', e.message); } };
