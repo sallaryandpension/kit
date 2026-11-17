@@ -142,15 +142,26 @@ export function openGmailDraft(msg) {
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const SCOPE = 'https://www.googleapis.com/auth/gmail.send';
 
+let gisPromise = null;
+/** טוען מראש את רכיב ההתחברות של Google (מומלץ בטעינת הדף, כדי שהחלון ייפתח מיד בלחיצה). */
+export function preloadGoogleSignIn() { return loadGis(); }
+
 function loadGis() {
   if (globalThis.google?.accounts?.oauth2) return Promise.resolve();
-  return new Promise((resolve, reject) => {
+  if (gisPromise) return gisPromise;
+  return (gisPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = GIS_SRC; s.async = true;
-    s.onload = () => resolve(); s.onerror = () => reject(new Error('טעינת ההתחברות של Google נכשלה'));
+    s.onload = () => resolve();
+    s.onerror = () => { gisPromise = null; reject(new Error('טעינת ההתחברות של Google נכשלה – בדוק חיבור לאינטרנט / חוסם פרסומות')); };
     document.head.appendChild(s);
-  });
+  }));
 }
+
+const GIS_ERRORS = {
+  popup_failed_to_open: 'הדפדפן חסם את חלון ההתחברות של Google – אפשר חלונות קופצים לאתר ונסה שוב',
+  popup_closed: 'חלון ההתחברות נסגר לפני שהסתיים',
+};
 
 /**
  * שליחה אוטומטית מחשבון Gmail של המשתמש. ההרשאה היחידה: gmail.send (שליחה בלבד – בלי קריאת מיילים).
@@ -171,10 +182,10 @@ export class GmailSender {
       const client = google.accounts.oauth2.initTokenClient({
         client_id: this.#clientId, scope: SCOPE,
         callback: (r) => {
-          if (r.error) return reject(new Error(`ההתחברות נכשלה: ${r.error}`));
+          if (r.error) return reject(new Error(`ההתחברות נכשלה: ${r.error}${r.error_description ? ` – ${r.error_description}` : ''}`));
           this.#token = r.access_token; this.#expires = Date.now() + (Number(r.expires_in) - 60) * 1000; resolve(true);
         },
-        error_callback: (e) => reject(new Error(`ההתחברות בוטלה: ${e?.type ?? 'unknown'}`)),
+        error_callback: (e) => reject(new Error(GIS_ERRORS[e?.type] ?? `ההתחברות בוטלה: ${e?.type ?? 'unknown'}`)),
       });
       client.requestAccessToken();
     });

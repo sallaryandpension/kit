@@ -19,5 +19,6 @@ button:disabled { opacity:.5; cursor:default; }
 .msg { padding:10px 12px; border-radius:8px; margin-top:10px; white-space:pre-wrap; }
 .msg.ok { background:#e3f6ec; color:var(--ok); } .msg.err { background:#fde8e6; color:var(--bad); } .msg.info { background:#e8f0fd; color:var(--accent); }
 .muted { color:var(--muted); font-size:13px; }
+#gstate { margin-top:10px; font-size:14px; color:var(--text); }
 table { width:100%; border-collapse:collapse; } td, th { padding:7px 6px; border-bottom:1px solid var(--line); text-align:right; }
 .done { color:var(--ok); }

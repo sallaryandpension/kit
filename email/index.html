@@ -35,7 +35,7 @@
   </div>
 </main>
 <script type="module">
-  import { openGmailDraft, mailtoUrl, GmailSender, bytesToBase64 } from './email.js';
+  import { openGmailDraft, mailtoUrl, GmailSender, bytesToBase64, preloadGoogleSignIn } from './email.js';
   import { GMAIL_CLIENT_ID } from '../kit.config.js';
   const $ = (id) => document.getElementById(id);
   const out = (cls, text) => { $('out').innerHTML = ''; const d = document.createElement('div'); d.className = `msg ${cls}`; d.textContent = text; $('out').appendChild(d); };
@@ -52,14 +52,17 @@
   $('draft').onclick = () => { try { openGmailDraft(msg()); out('ok', 'נפתחה טיוטה ב-Gmail – בדוק ולחץ "שלח".'); } catch (e) { out('err', e.message); } };
   $('mailto').onclick = () => { try { location.href = mailtoUrl(msg()); } catch (e) { out('err', e.message); } };
 
+  preloadGoogleSignIn().catch((e) => ($('gstate').textContent = e.message));
+
   $('connect').onclick = async () => {
     try {
       const id = $('clientId').value.trim();
       sender = new GmailSender({ clientId: id });
       try { localStorage.setItem('kit.gmail.clientId', id); } catch {}
+      $('gstate').textContent = '⏳ נפתח חלון התחברות של Google – בחר את החשבון ואשר. (אם לא נפתח חלון – בדוק חסימת חלונות קופצים.)';
       await sender.connect();
-      $('gstate').textContent = '✔ מחובר ל-Gmail (לשעה הקרובה).'; $('send').disabled = false; $('disconnect').disabled = false;
-    } catch (e) { $('gstate').textContent = e.message; }
+      $('gstate').textContent = '✔ מחובר ל-Gmail (לשעה הקרובה). עכשיו אפשר ללחוץ "שלח אוטומטית".'; $('send').disabled = false; $('disconnect').disabled = false;
+    } catch (e) { $('gstate').textContent = `✘ ${e.message}`; }
   };
   $('disconnect').onclick = () => { sender?.disconnect(); $('send').disabled = true; $('disconnect').disabled = true; $('gstate').textContent = 'מנותק.'; };
 
