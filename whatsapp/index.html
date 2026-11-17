@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>הודעת וואטסאפ</title>
+  <link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<header><b>💬 הודעת וואטסאפ</b><a href="../">כל הכלים</a><a href="../email/">מייל</a></header>
+<main>
+  <div class="card">
+    <h2>הודעה אחת</h2>
+    <div class="grid">
+      <label>טלפון (ריק = לבחור איש קשר בוואטסאפ)<input id="phone" class="ltr" placeholder="050-1234567"></label>
+      <label>פתיחה ב<select id="where"><option value="app">אפליקציה / אוטומטי</option><option value="web">WhatsApp Web (מחשב)</option></select></label>
+    </div>
+    <label>הודעה<textarea id="text"></textarea></label>
+    <div class="actions"><button class="wa" id="open">פתח בוואטסאפ</button><button id="copy">העתק קישור</button></div>
+    <div id="out"></div>
+    <p class="muted">וואטסאפ ייפתח על השיחה עם הטקסט מוכן – לוחצים "שלח". זו הדרך הרשמית של WhatsApp, בלי חשבון ובלי סיכון לחסימה.</p>
+  </div>
+
+  <div class="card">
+    <h3>כמה נמענים (הודעה אישית לכל אחד)</h3>
+    <label>נמענים – שורה לכל אחד: <span class="ltr">טלפון, שם</span><textarea id="list" class="ltr" placeholder="050-1111111, דנה&#10;052-2222222, יוסי"></textarea></label>
+    <label>תבנית ({{name}} יוחלף בשם)<textarea id="tpl" style="min-height:70px">שלום {{name}}, </textarea></label>
+    <div class="actions"><button id="prepare">הכן רשימה</button></div>
+    <div id="batch"></div>
+  </div>
+</main>
+<script type="module">
+  import { openWhatsApp, whatsappLink, whatsappWebLink, prepareBatch } from './whatsapp.js';
+  const $ = (id) => document.getElementById(id);
+  const out = (cls, text) => { $('out').innerHTML = ''; const d = document.createElement('div'); d.className = `msg ${cls}`; d.textContent = text; $('out').appendChild(d); };
+
+  // מילוי מקישור: ?phone=...&text=...
+  const qp = new URLSearchParams(location.search);
+  for (const k of ['phone', 'text']) if (qp.has(k)) $(k).value = qp.get(k);
+
+  const args = () => ({ phone: $('phone').value.trim() || undefined, text: $('text').value, web: $('where').value === 'web' });
+  $('open').onclick = () => { try { openWhatsApp(args()); out('ok', 'וואטסאפ נפתח – בדוק ולחץ "שלח".'); } catch (e) { out('err', e.message); } };
+  $('copy').onclick = async () => {
+    try { const a = args(); const url = a.web ? whatsappWebLink(a) : whatsappLink(a); await navigator.clipboard.writeText(url); out('ok', `הקישור הועתק:\n${url}`); }
+    catch (e) { out('err', e.message); }
+  };
+
+  $('prepare').onclick = () => {
+    const rows = $('list').value.split('\n').map((l) => l.trim()).filter(Boolean).map((l) => {
+      const [phone, ...name] = l.split(','); return { phone: phone.trim(), name: name.join(',').trim() || undefined };
+    });
+    const items = prepareBatch(rows, $('tpl').value);
+    const t = document.createElement('table');
+    t.innerHTML = '<tr><th>טלפון</th><th>הודעה</th><th></th></tr>';
+    for (const it of items) {
+      const tr = document.createElement('tr');
+      const td = (txt) => { const c = document.createElement('td'); c.textContent = txt; return c; };
+      tr.append(td(it.phone), td(it.error ?? it.text));
+      const act = document.createElement('td');
+      if (it.url) {
+        const b = document.createElement('button'); b.className = 'wa'; b.textContent = 'פתח';
+        b.onclick = () => { window.open(it.url, '_blank', 'noopener'); b.textContent = '✔ נפתח'; b.className = 'done'; };
+        act.appendChild(b);
+      }
+      tr.appendChild(act); t.appendChild(tr);
+    }
+    $('batch').replaceChildren(t);
+  };
+</script>
+</body>
+</html>

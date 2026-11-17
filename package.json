@@ -1,0 +1,10 @@
+{
+  "name": "kit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "אפליקציות משנה עצמאיות: שליחת מיילים ושליחת הודעות וואטסאפ מהדפדפן",
+  "type": "module",
+  "scripts": {
+    "test": "node --test --test-reporter=spec \"test/**/*.test.js\""
+  }
+}

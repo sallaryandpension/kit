@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>שליחת מייל</title>
+  <link rel="stylesheet" href="../kit.css">
+</head>
+<body>
+<header><b>✉️ שליחת מייל</b><a href="../">כל הכלים</a><a href="../whatsapp/">וואטסאפ</a></header>
+<main>
+  <div class="card">
+    <h2>הודעה</h2>
+    <div class="grid">
+      <label>אל (אפשר כמה, מופרדים בפסיק)<input id="to" class="ltr" placeholder="name@example.com"></label>
+      <label>עותק (Cc)<input id="cc" class="ltr"></label>
+    </div>
+    <label>נושא<input id="subject"></label>
+    <label>תוכן<textarea id="text"></textarea></label>
+    <label>קבצים מצורפים (רק בשליחה אוטומטית)<input type="file" id="files" multiple></label>
+    <div class="actions">
+      <button class="primary" id="draft">פתח טיוטה ב-Gmail</button>
+      <button id="mailto">פתח בתוכנת הדואר</button>
+      <button id="send" disabled>שלח אוטומטית</button>
+    </div>
+    <div id="out"></div>
+  </div>
+
+  <div class="card">
+    <h3>שליחה אוטומטית מ-Gmail (אופציונלי)</h3>
+    <p class="muted">"פתח טיוטה" עובד מיד, בלי הגדרות: Gmail נפתח עם הכול מוכן ואתה לוחץ "שלח".
+      לשליחה אוטומטית (כולל קבצים מצורפים) צריך הגדרה חד-פעמית ב-Google Cloud – ראו README. ההרשאה היא <b>שליחה בלבד</b>; אין גישה לקריאת המיילים שלך.</p>
+    <label>Google OAuth Client ID<input id="clientId" class="ltr" placeholder="xxxxxxxx.apps.googleusercontent.com"></label>
+    <div class="actions"><button id="connect">התחבר ל-Gmail</button><button id="disconnect" disabled>התנתק</button></div>
+    <div id="gstate" class="muted"></div>
+  </div>
+</main>
+<script type="module">
+  import { openGmailDraft, mailtoUrl, GmailSender, bytesToBase64 } from './email.js';
+  const $ = (id) => document.getElementById(id);
+  const out = (cls, text) => { $('out').innerHTML = ''; const d = document.createElement('div'); d.className = `msg ${cls}`; d.textContent = text; $('out').appendChild(d); };
+  const msg = () => ({ to: $('to').value, cc: $('cc').value, subject: $('subject').value, text: $('text').value });
+
+  // מילוי מקישור: ?to=...&subject=...&text=...  (כך קוד אחר יכול לפתוח את הכלי עם פרטים מוכנים)
+  const qp = new URLSearchParams(location.search);
+  for (const k of ['to', 'cc', 'subject', 'text']) if (qp.has(k)) $(k).value = qp.get(k);
+
+  // ה-Client ID נשמר בדפדפן הזה לנוחות (אינו סוד)
+  try { $('clientId').value = localStorage.getItem('kit.gmail.clientId') ?? ''; } catch {}
+  let sender = null;
+
+  $('draft').onclick = () => { try { openGmailDraft(msg()); out('ok', 'נפתחה טיוטה ב-Gmail – בדוק ולחץ "שלח".'); } catch (e) { out('err', e.message); } };
+  $('mailto').onclick = () => { try { location.href = mailtoUrl(msg()); } catch (e) { out('err', e.message); } };
+
+  $('connect').onclick = async () => {
+    try {
+      const id = $('clientId').value.trim();
+      sender = new GmailSender({ clientId: id });
+      try { localStorage.setItem('kit.gmail.clientId', id); } catch {}
+      await sender.connect();
+      $('gstate').textContent = '✔ מחובר ל-Gmail (לשעה הקרובה).'; $('send').disabled = false; $('disconnect').disabled = false;
+    } catch (e) { $('gstate').textContent = e.message; }
+  };
+  $('disconnect').onclick = () => { sender?.disconnect(); $('send').disabled = true; $('disconnect').disabled = true; $('gstate').textContent = 'מנותק.'; };
+
+  $('send').onclick = async () => {
+    const files = [...$('files').files];
+    if (!confirm(`לשלוח עכשיו אל ${$('to').value}?`)) return;
+    $('send').disabled = true;
+    try {
+      const attachments = await Promise.all(files.map(async (f) => ({
+        filename: f.name, mimeType: f.type || 'application/octet-stream', data: bytesToBase64(new Uint8Array(await f.arrayBuffer())) })));
+      const r = await sender.send({ ...msg(), attachments });
+      out('ok', `✔ נשלח (מזהה Gmail: ${r.id})`);
+    } catch (e) { out('err', e.message); } finally { $('send').disabled = !sender?.connected; }
+  };
+</script>
+</body>
+</html>
