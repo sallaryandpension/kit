@@ -56,7 +56,8 @@
 
   $('connect').onclick = async () => {
     try {
-      const id = $('clientId').value.trim();
+      const id = $('clientId').value.trim() || GMAIL_CLIENT_ID;
+      $('clientId').value = id;
       sender = new GmailSender({ clientId: id });
       try { localStorage.setItem('kit.gmail.clientId', id); } catch {}
       $('gstate').textContent = '⏳ נפתח חלון התחברות של Google – בחר את החשבון ואשר. (אם לא נפתח חלון – בדוק חסימת חלונות קופצים.)';
